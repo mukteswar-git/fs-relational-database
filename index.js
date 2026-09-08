@@ -1,4 +1,5 @@
 require('dotenv').config()
+
 const { Sequelize, Model, DataTypes } = require('sequelize')
 const express = require('express')
 
@@ -8,71 +9,72 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres'
 })
 
-class Note extends Model {}
+class Blog extends Model {}
 
-Note.init({
+Blog.init({
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  content: {
+  author: {
+    type: DataTypes.TEXT
+  },
+  url: {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  important: {
-    type: DataTypes.BOOLEAN
+  title: {
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-  date: {
-    type: DataTypes.DATE
+  likes: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   sequelize,
   underscored: true,
   timestamps: false,
-  modelName: 'note'
+  modelName: 'blog'
 })
 
-Note.sync()
+Blog.sync()
 
 app.use(express.json())
 
-app.get('/api/notes', async (req, res) => {
-  const notes = await Note.findAll()
-  res.json(notes)
+app.get('/api/blogs', async (req, res) => {
+  const blogs = await Blog.findAll()
+  res.json(blogs)
 })
 
-app.post('/api/notes', async (req, res) => {
+app.post('/api/blogs', async (req, res) => {
   try {
-    const note = await Note.create({
-      ...req.body,
-      date: new Date()
-    })
-
-    res.json(note)
+    const blog = await Blog.create(req.body)
+    res.json(blog)
   } catch (error) {
-    res.status(400).json({ error: error.message })
+    res.status(400).json({
+      error: error.message
+    })
   }
 })
 
-app.get('/api/notes/:id', async (req, res) => {
-  const note = await Note.findByPk(req.params.id)
-  if (note) {
-    res.json(note)
-  } else {
-    res.status(404).end()
-  }
-})
+app.delete('/api/blogs/:id', async (req, res) => {
+  const { id } = req.params
 
-app.put('/api/notes/:id', async (req, res) => {
-  const note = await Note.findByPk(req.params.id)
-  if (note) {
-    note.important = req.body.important
-    await note.save()
-    res.json(note)
-  } else {
-    res.status(404).end()
+  const deleted = await Blog.destroy({
+    where: {
+      id: id
+    }
+  })
+
+  if (deleted === 0) {
+    return res.status(404).json({
+      error: 'Blog not found'
+    })
   }
+
+  res.status(204).end()
 })
 
 const PORT = process.env.PORT || 3001
