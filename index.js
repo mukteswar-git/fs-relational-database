@@ -1,84 +1,74 @@
-require('dotenv').config()
-
-const { Sequelize, Model, DataTypes } = require('sequelize')
 const express = require('express')
-
 const app = express()
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres'
-})
+const { PORT } = require('./util/config')
+const { connectToDatabase } = require('./util/db')
 
-class Blog extends Model {}
+const notesRouter = require('./controllers/notes')
+const blogRouter = require('./controllers/blogs')
+const userRouter = require('./controllers/users')
+const loginRouter = require('./controllers/login')
+const authorRouter = require('./controllers/authors')
+const { where } = require('sequelize')
 
-Blog.init({
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  author: {
-    type: DataTypes.TEXT
-  },
-  url: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  title: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  likes: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
+const { Blog, Note, User } = require('./models')
+
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message)
+
+  if (error.name === 'SequelizeValidationError') {
+    return res.status(400).json({
+      error: error.errors.map(error => error.message)
+    })
   }
-}, {
-  sequelize,
-  underscored: true,
-  timestamps: false,
-  modelName: 'blog'
-})
 
-Blog.sync()
+  if (error.name === 'SequelizeUniqueConstraintError') {
+    return res.status(400).json({
+      error: error.errors.map(error => error.message)
+    })
+  }
 
-app.use(express.json())
-
-app.get('/api/blogs', async (req, res) => {
-  const blogs = await Blog.findAll()
-  res.json(blogs)
-})
-
-app.post('/api/blogs', async (req, res) => {
-  try {
-    const blog = await Blog.create(req.body)
-    res.json(blog)
-  } catch (error) {
-    res.status(400).json({
+  if (error.name === 'SequelizeDatabaseError') {
+    return res.status(400).json({
       error: error.message
     })
   }
+
+  next(error)
+}
+
+app.use(express.json())
+
+app.use('/api/notes', notesRouter)
+app.use('/api/blogs', blogRouter)
+app.use('/api/users', userRouter)
+app.use('/api/login', loginRouter)
+app.use('/api/authors', authorRouter)
+
+app.get('/', (req, res) => {
+  res.status(200).end()
 })
 
-app.delete('/api/blogs/:id', async (req, res) => {
-  const { id } = req.params
+app.post('/api/reset', async (req, res, next) => {
+  try {
+    await Blog.destroy({ where: {} })
+    await Note.destroy({ where: {} })
+    await User.destroy({ where: {} })
 
-  const deleted = await Blog.destroy({
-    where: {
-      id: id
-    }
-  })
-
-  if (deleted === 0) {
-    return res.status(404).json({
-      error: 'Blog not found'
-    })
+    res.status(204).end()
+  } catch (error) {
+    next(error)
   }
-
-  res.status(204).end()
 })
 
-const PORT = process.env.PORT || 3001
+app.use(errorHandler)
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+const start = async () => {
+  await connectToDatabase()
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}
+
+start()
