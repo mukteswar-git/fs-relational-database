@@ -10,6 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?sslmode=disable
+      PORT: 3001
+      SECRET: test_secret
+
     services:
       postgres:
         image: postgres:17
@@ -38,20 +43,12 @@ jobs:
 
       - name: Start application
         run: npm run start:test > app.log 2>&1 &
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?sslmode=disable
-          PORT: 3001
-          SECRET: test_secret
 
       - name: Wait for application to be ready
         run: npx wait-on http://localhost:3001 -t 30000
 
       - name: Run tests
         run: npm test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?sslmode=disable
-          PORT: 3001
-          SECRET: test_secret
 
       - name: Print application logs on failure
         if: failure()
