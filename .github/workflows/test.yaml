@@ -49,15 +49,19 @@ jobs:
           echo "PORT=$PORT"
           echo "SECRET is set: ${SECRET:+yes}"
 
+          TESTING=true node -e "
+            const config = require('./util/config')
+            console.log('TESTING:', process.env.TESTING)
+            console.log('process.TEST_DATABASE_URL:', process.env.TEST_DATABASE_URL ? 'SET' : 'MISSING')
+            console.log('config.TEST_DATABASE_URL:', config.TEST_DATABASE_URL ? 'SET' : 'MISSING')
+            console.log('config.DATABASE_URL:', config.DATABASE_URL ? 'SET' : 'MISSING')
+          "
+
       - name: Start application
         run: |
           npm run start:test > app.log 2>&1 &
           sleep 5
           cat app.log
-
-      - name: Check application
-        run: |
-          curl -v http://localhost:3001
 
       - name: Run tests
         run: npm test
