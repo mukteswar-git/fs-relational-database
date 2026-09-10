@@ -46,11 +46,12 @@ jobs:
           echo "DATABASE_URL is set: ${DATABASE_URL:+yes}"
           echo "PORT=$PORT"
           echo "SECRET is set: ${SECRET:+yes}"
+          node -e "console.log('Node DATABASE_URL:', process.env.DATABASE_URL)"
 
       - name: Start application
         run: npm run start:test > app.log 2>&1 &
 
-      - name: Wait for application to be ready
+      - name: Wait for application
         run: npx wait-on "http://localhost:3001" -t 30000
 
       - name: Run tests
