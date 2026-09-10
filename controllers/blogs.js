@@ -1,31 +1,7 @@
 const router = require('express').Router()
-const jwt = require('jsonwebtoken')
 
-const { SECRET } = require('../util/config')
 const { Blog, User } = require('../models')
-
-const tokenExtractor = (req, res, next) => {
-  const authorization = req.get('authorization')
-
-  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    try {
-      req.decodeToken = jwt.verify(
-        authorization.substring(7),
-        SECRET
-      )
-    } catch {
-      return res.status(401).json({
-        error: 'token invalid'
-      })
-    }
-  } else {
-    return res.status(401).json({
-      error: 'token missing'
-    })
-  }
-
-  next()
-}
+const { tokenExtractor } = require('../util/middleware')
 
 const { Op } = require('sequelize')
 
@@ -69,15 +45,13 @@ router.get('/', async (req, res) => {
 
 router.post('/', tokenExtractor, async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.decodeToken.id)
-
     const blog = await Blog.create({
       ...req.body,
-      userId: user.id
+      userId: req.user.id
     })
 
     res.json(blog)
-  } catch(error) {
+  } catch (error) {
     next(error)
   }
 })
@@ -97,7 +71,7 @@ router.put('/:id', blogFinder, async (req, res, next) => {
 })
 
 router.delete('/:id', tokenExtractor, blogFinder, async (req, res) => {
-  if (req.blog.userId !== req.decodeToken.id) {
+  if (req.blog.userId !== req.user.id) {
     return res.status(401).json({
       error: 'only the user who added the blog can delete it'
     })

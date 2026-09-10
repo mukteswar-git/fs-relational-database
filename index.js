@@ -9,9 +9,18 @@ const blogRouter = require('./controllers/blogs')
 const userRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 const authorRouter = require('./controllers/authors')
-const { where } = require('sequelize')
+const readingListsRouter = require('./controllers/readinglists')
+const logoutRouter = require('./controllers/logout')
 
-const { Blog, Note, User } = require('./models')
+const {
+  Blog,
+  Note,
+  User,
+  ReadingList,
+  Session,
+  Membership,
+  UserNotes
+} = require('./models')
 
 const errorHandler = (error, req, res, next) => {
   console.error(error.message)
@@ -44,6 +53,8 @@ app.use('/api/blogs', blogRouter)
 app.use('/api/users', userRouter)
 app.use('/api/login', loginRouter)
 app.use('/api/authors', authorRouter)
+app.use('/api/readinglists', readingListsRouter)
+app.use('/api/logout', logoutRouter)
 
 app.get('/', (req, res) => {
   res.status(200).end()
@@ -51,6 +62,10 @@ app.get('/', (req, res) => {
 
 app.post('/api/reset', async (req, res, next) => {
   try {
+    await ReadingList.destroy({ where: {} })
+    await Session.destroy({ where: {} })
+    await UserNotes.destroy({ where: {} })
+    await Membership.destroy({ where: {} })
     await Blog.destroy({ where: {} })
     await Note.destroy({ where: {} })
     await User.destroy({ where: {} })
