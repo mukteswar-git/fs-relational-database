@@ -32,12 +32,13 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install dependencies
         run: npm ci
@@ -49,6 +50,8 @@ jobs:
           echo "PORT=$PORT"
           echo "SECRET is set: ${SECRET:+yes}"
 
+      - name: Test configuration
+        run: |
           TESTING=true node -e "
             const config = require('./util/config')
             console.log('TESTING:', process.env.TESTING)
@@ -62,24 +65,35 @@ jobs:
           nohup npm run start:test > app.log 2>&1 &
           echo $! > app.pid
 
-      - name: Wait for application
-        run: |
-          sleep 3
+          sleep 5
+
           echo "===== APPLICATION LOG ====="
           cat app.log
+
           echo "===== PROCESS ====="
           ps aux | grep node || true
+
           echo "===== PORT ====="
-          ss -lntp | grep 3001 || true
-          echo "===== WAITING ====="
-          npx wait-on http://localhost:3001 -t 30000
+          ss -ltnp | grep 3001 || true
+
+      - name: Check application
+        run: |
+          curl -v http://localhost:3001
 
       - name: Run tests
         run: npm test
 
       - name: Print application logs on failure
         if: failure()
-        run: cat app.log
+        run: |
+          echo "===== APPLICATION LOG ====="
+          cat app.log || true
+
+          echo "===== PROCESS ====="
+          ps aux | grep node || true
+
+          echo "===== PORT ====="
+          ss -ltnp | grep 3001 || true
 
       - name: Stop application
         if: always()
