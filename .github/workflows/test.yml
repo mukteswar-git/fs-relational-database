@@ -49,7 +49,10 @@ jobs:
           node -e "console.log('Node DATABASE_URL:', process.env.DATABASE_URL)"
 
       - name: Start application
-        run: npm run start:test > app.log 2>&1 &
+        run: |
+          npm run start:test > app.log 2>&1 &
+          sleep 5
+          cat app.log
 
       - name: Wait for application
         run: npx wait-on "http://localhost:3001" -t 30000
