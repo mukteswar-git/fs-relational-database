@@ -47,6 +47,9 @@ jobs:
           echo "PORT=$PORT"
           echo "SECRET is set: ${SECRET:+yes}"
 
+      - name: Test Node environment
+        run: node -e "console.log('Node DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING')"
+
       - name: Start application
         run: npm run start:test > app.log 2>&1 &
 
