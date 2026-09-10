@@ -47,14 +47,11 @@ jobs:
           echo "PORT=$PORT"
           echo "SECRET is set: ${SECRET:+yes}"
 
-      - name: Test Node environment
-        run: node -e "console.log('Node DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING')"
-
       - name: Start application
         run: npm run start:test > app.log 2>&1 &
 
       - name: Wait for application to be ready
-        run: npx wait-on http://localhost:3001 -t 30000
+        run: npx wait-on "http://localhost:3001" -t 30000
 
       - name: Run tests
         run: npm test
