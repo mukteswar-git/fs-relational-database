@@ -59,9 +59,11 @@ jobs:
 
       - name: Start application
         run: |
-          npm run start:test > app.log 2>&1 &
-          sleep 5
-          cat app.log
+          nohup npm run start:test > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Wait for application
+        run: npx wait-on http://localhost:3001 -t 30000
 
       - name: Run tests
         run: npm test
@@ -72,4 +74,7 @@ jobs:
 
       - name: Stop application
         if: always()
-        run: pkill -f "node index.js" || true
+        run: |
+          if [ -f app.pid ]; then
+            kill "$(cat app.pid)" || true
+          fi
