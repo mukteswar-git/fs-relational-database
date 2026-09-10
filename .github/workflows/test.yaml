@@ -63,7 +63,16 @@ jobs:
           echo $! > app.pid
 
       - name: Wait for application
-        run: npx wait-on http://localhost:3001 -t 30000
+        run: |
+          sleep 3
+          echo "===== APPLICATION LOG ====="
+          cat app.log
+          echo "===== PROCESS ====="
+          ps aux | grep node || true
+          echo "===== PORT ====="
+          ss -lntp | grep 3001 || true
+          echo "===== WAITING ====="
+          npx wait-on http://localhost:3001 -t 30000
 
       - name: Run tests
         run: npm test
